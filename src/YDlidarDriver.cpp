@@ -937,6 +937,11 @@ result_t YDlidarDriver::startScan(bool force, uint32_t timeout)
   stop();
   checkTransDelay();
   delay(30);
+  // Local fix: spin the motor up *before* waiting for the scan response.
+  // stop() above turns the motor off via DTR, and an X4 with a stopped motor
+  // never answers LIDAR_CMD_SCAN, so the original order always timed out.
+  if (isSupportMotorCtrl(model))
+    startMotor();
   {
     // 不管单双通雷达都发送启动命令
     if (!sendCmd(force ? LIDAR_CMD_FORCE_SCAN : LIDAR_CMD_SCAN))
@@ -958,9 +963,6 @@ result_t YDlidarDriver::startScan(bool force, uint32_t timeout)
     // 创建数据解析线程
     ret = startThread();
   }
-
-  if (isSupportMotorCtrl(model))
-    startMotor();
 
   m_isScanning = true;
 
